@@ -20,11 +20,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: LCBAD
+        working-directory: ./LCBAD
 
       - name: Build
         run: npm run build
-        working-directory: LCBAD
+        working-directory: ./LCBAD
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
