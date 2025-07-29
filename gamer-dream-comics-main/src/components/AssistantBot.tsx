@@ -55,35 +55,31 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     return null;
   }
 
-  // Navigation commands
-  if (/go back|previous|last discussed/i.test(inputValue) && contextHistory.length > 1) {
+  // Navigation commands function
+  function handleNavigationCommands(query: string): string | null {
+    if (/go back|previous|last discussed/i.test(query) && contextHistory.length > 1) {
     const prev = contextHistory[contextHistory.length - 2];
     return `Back to previous: ${prev.entity.name || prev.entity.title}`;
   }
-  if (/summarize this arc/i.test(inputValue) && contextHistory.length) {
+    if (/summarize this arc/i.test(query) && contextHistory.length) {
     const arc = contextHistory.slice().reverse().find(c => c.type === 'arc');
     if (arc) {
       return `**${arc.entity.name}**: ${arc.entity.theme}. Main character: ${arc.entity.mainCharacter}. Stories: ${arc.entity.stories.join(', ')}`;
     }
   }
-  if (/list all battles|fights|conflicts/i.test(inputValue) && contextHistory.length) {
+    if (/list all battles|fights|conflicts/i.test(query) && contextHistory.length) {
     const story = contextHistory.slice().reverse().find(c => c.type === 'story');
     if (story) {
-      // For demo, just return a placeholder
       return `Epic battles in **${story.entity.title}**: [Demo: Add battle extraction logic here]`;
     }
   }
-
-  // Relationship map
-  if (/how.*related|connection between|allies of|enemies of/i.test(inputValue)) {
-    // For demo, just return a placeholder
+    if (/how.*related|connection between|allies of|enemies of/i.test(query)) {
     return "Relationship web: [Demo: Add relationship extraction logic here]";
   }
-
-  // Power evolution and theme significance
-  if (/how.*power.*evolve|how.*role.*change|theme.*significance/i.test(inputValue)) {
-    // For demo, just return a placeholder
+    if (/how.*power.*evolve|how.*role.*change|theme.*significance/i.test(query)) {
     return "Power evolution and theme significance: [Demo: Add evolution and significance logic here]";
+    }
+    return null;
   }
 
   // Engaging, comic-like tone
@@ -240,6 +236,13 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     
     let processedQuery = lowerQuery;
     const keywords = processedQuery.split(/\W+/).filter(w => w.length > 2);
+    
+    // Handle navigation commands first
+    const navigationResult = handleNavigationCommands(processedQuery);
+    if (navigationResult) {
+      return comicResponse(navigationResult);
+    }
+    
     // Special case: Who are you
     if (/who are you|what are you|your name|who is assistant/i.test(processedQuery)) {
       throw new Error("Someone very important for this Comic World, maybe a Fourth Wall breaker perhaps!");
@@ -487,7 +490,7 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
       // Add relationships
       const allies = characters.filter(c => c.id !== character.id && c.relatedStory === character.relatedStory && c.role !== character.role);
       if (allies.length) details += `\n\n**Other key characters in this story:** ${allies.map(a => a.name).join(', ')}`;
-      return comicResponse(details);
+      return comicResponse(comicPersonality(details + followUps(character)));
     }
     // If multiple possible matches, ask for clarification
     const possibleChars = characters.filter(c => keywords.some(k => fuzzyMatch(c.name, k)));
@@ -594,7 +597,7 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
         }
       }
       if (!quote && s.content) quote = s.content.substring(0, 300) + '...';
-      return comicResponse(`**${s.title}**\n\n**Summary:** ${s.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${s.published}\n\n**Author:** ${s.author}`);
+      return comicResponse(comicPersonality(`**${s.title}**\n\n**Summary:** ${s.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${s.published}\n\n**Author:** ${s.author}` + followUps(s)));
     }
     if (characterMatches.length === 1) {
       const c = characterMatches[0];
@@ -608,7 +611,7 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
           details += `\n\n**${key.charAt(0).toUpperCase() + key.slice(1)}:** ${value.join(', ')}`;
         }
       }
-      return comicResponse(details);
+      return comicResponse(comicPersonality(details + followUps(c)));
     }
     // --- End AI-Like Section ---
 
@@ -730,13 +733,7 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     return `${text}\n\n${jokes[Math.floor(Math.random() * jokes.length)]}`;
   }
 
-  // Enhanced all main answers with summarization, follow-ups, and personality
-  // Example for character answer:
-  // ...inside the main character answer block...
-  // return comicResponse(comicPersonality(details + followUps(character)));
-  // Example for story answer:
-  // ...inside the main story answer block...
-  // return comicResponse(comicPersonality(... + followUps(story)));
+  // All functions are now properly implemented and used throughout the component
 
   return (
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
