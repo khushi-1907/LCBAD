@@ -319,6 +319,12 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
       updateContextHistory(entityResult.entity, entityResult.type);
     }
 
+    // Use disambiguate function to handle ambiguous queries
+    const disambiguationResult = disambiguate(processedQuery, entityResult?.type || 'character');
+    if (disambiguationResult) {
+      return comicResponse(disambiguationResult);
+    }
+
     // If ambiguous, ask for clarification
     if (!entityResult && /he|she|they|it|this|that|him|her|them/.test(processedQuery) && contextHistory.length === 0) {
       return comicResponse("Can you clarify who or what you're referring to? (e.g., character name, story, or power)");
@@ -788,10 +794,24 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
                         <span className="text-xs opacity-70">
                           {message.sender === 'user' ? 'You' : 'Mr. Effort'}
                         </span>
+                        {message.sender === 'bot' && (
+                          <Badge variant="secondary" className="text-xs">
+                            Assistant
+                          </Badge>
+                        )}
                       </div>
                       <div className="whitespace-pre-wrap text-sm">
                         {message.text}
                       </div>
+                      {message.sender === 'bot' && contextHistory.length > 0 && (
+                        <div className="flex gap-1 mt-2">
+                          {contextHistory[contextHistory.length - 1]?.type && (
+                            <Badge variant="outline" className="text-xs">
+                              {contextHistory[contextHistory.length - 1].type}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -801,6 +821,9 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
                       <div className="flex items-center gap-2">
                         <Bot className="h-3 w-3" />
                         <span className="text-xs opacity-70">Mr. Effort</span>
+                        <Badge variant="secondary" className="text-xs">
+                          Thinking
+                        </Badge>
                       </div>
                       <div className="text-sm">Typing...</div>
                     </div>
