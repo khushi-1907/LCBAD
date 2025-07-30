@@ -486,7 +486,8 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     // If multiple possible matches, ask for clarification
     const possibleChars = characters.filter(c => keywords.some(k => fuzzyMatch(c.name, k)));
     if (possibleChars.length > 1) {
-      return comicResponse(`I found multiple characters matching your question: ${possibleChars.map(c => c.name).join(', ')}. Who do you mean?`);
+      const disambiguation = disambiguate(processedQuery, 'character');
+      return comicResponse(disambiguation || `I found multiple characters matching your question: ${possibleChars.map(c => c.name).join(', ')}. Who do you mean?`);
     }
     // --- End Smarter Character Extraction ---
 
@@ -788,6 +789,9 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
                         <span className="text-xs opacity-70">
                           {message.sender === 'user' ? 'You' : 'Mr. Effort'}
                         </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {message.sender === 'user' ? 'User' : 'Assistant'}
+                        </Badge>
                       </div>
                       <div className="whitespace-pre-wrap text-sm">
                         {message.text}
