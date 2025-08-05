@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const chokidar = require('chokidar');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import chokidar from 'chokidar';
 
 class AutoCommit {
   constructor() {
