@@ -1,15 +1,35 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Book, Users, User, LogOut } from "lucide-react";
+import { Book, Users, User, LogOut, clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  //use time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date) => {
+    return date.toLocateTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12:false
+      });
+    };
+
   const isActive = (path: string) => {
     return location.pathname === path ? "text-comic-purple" : "hover:text-comic-purple transition-colors";
   };
@@ -44,6 +64,12 @@ const Navbar: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-6">
+        {/*clock display*/}
+        <div classname="flex items-center space-x-2 text-sm text-gray-300 bg-white/5 px-3 py-1 rounded-md">
+        <Clock className="h-4 w-4 text-comic-softBliue" />
+        <span className="font-mono">{formatTime(currentTime)}</span>
+        </div>
+        
           <div className="flex space-x-6">
             <Link 
               to="/" 
