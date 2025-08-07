@@ -164,7 +164,7 @@ Now awake in the modern world, Noe-Chu found himself famous again, but confused 
   },
   {
     id: "mreffort-2",
-    title: "No More Writer",
+    title: "Mr. Effort: No More Writer",
     author: "Jashan Bansal",
     summary: "Before the Truman Show or TVA, Mr. Effort had already experienced the life of being trapped in reality manipulation. But risking unruled dimensions for breaking your own strings, does that make sense?",
     content: `Writer Noe Chu, had always been a bit of an average guy in his world. He wasn't aware of the powers he held—until, one day when something strange happened. He had been writing a story while travelling back to his college, as he often did, about his own superhero characters—like Noe Chu aka Mr. Effort, whose superpower was being lucky. He got struck an idea to introduce that Mr. Effort could break the fourth wall and be aware of his existence within the story from now. It seemed like a fun twist, something to spice up the narrative. To do this, he inserted a scene of his own meetup with Mr. Effort in this journey. What he didn't expect, however, was for his writing to somehow drag the real-life Mr. Effort—into his world.
