@@ -31,7 +31,6 @@ interface AnonymousChatProps {
 }
 
 const AnonymousChat: React.FC<AnonymousChatProps> = ({ className }) => {
-  const { user } = useAuth();
   const {
     isConnected,
     anonymousIdentity,
@@ -132,21 +131,6 @@ const AnonymousChat: React.FC<AnonymousChatProps> = ({ className }) => {
     return 'text-red-500';
   };
 
-  if (!user) {
-    return (
-      <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
-        <Card className="w-80 shadow-xl border-red-500">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-red-500">
-              <AlertTriangle className="h-5 w-5" />
-              <span>Please sign in to use anonymous chat</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
       {/* Chat Button */}
@@ -201,14 +185,14 @@ const AnonymousChat: React.FC<AnonymousChatProps> = ({ className }) => {
                   <Shield className="h-12 w-12 mx-auto text-purple-500" />
                   <h3 className="text-lg font-semibold">Anonymous Chat</h3>
                   <p className="text-sm text-gray-600">
-                    Connect your wallet to start chatting anonymously
+                    Connect anonymously to start chatting
                   </p>
                   <Button
                     onClick={initializeAnonymousChat}
                     disabled={isLoading}
                     className="w-full"
                   >
-                    {isLoading ? 'Connecting...' : 'Connect Wallet'}
+                    {isLoading ? 'Connecting...' : 'Connect Anonymously'}
                   </Button>
                   {error && (
                     <div className="text-red-500 text-sm">{error}</div>

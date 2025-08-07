@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { create } from 'ipfs-http-client';
 
 // Type declaration for window.ethereum
@@ -15,10 +14,20 @@ const ipfs = create({
   protocol: 'https'
 });
 
+// Utility for base64 encoding
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
 export interface AnonymousIdentity {
-  address: string;
-  publicKey: string;
-  privateKey: string;
+  address: string; // base64 public key
+  publicKey: string; // base64
+  privateKey: string; // base64 (exported, encrypted or plain for demo)
   pseudonym: string;
   reputation: number;
   createdAt: Date;
@@ -38,84 +47,56 @@ export interface AnonymousMessage {
 }
 
 export class AnonymousChatClient {
-  private provider: ethers.BrowserProvider | null = null;
-  private signer: ethers.Signer | null = null;
   private currentIdentity: AnonymousIdentity | null = null;
 
-  // Initialize Web3 connection
-  async connectWallet(): Promise<boolean> {
-    try {
-      if (typeof window.ethereum !== 'undefined') {
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        await this.provider.send('eth_requestAccounts', []);
-        this.signer = await this.provider.getSigner();
-        return true;
-      } else {
-        throw new Error('MetaMask not found');
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      return false;
-    }
-  }
-
-  // Generate anonymous identity
+  // Generate in-browser keypair
   async generateAnonymousIdentity(): Promise<AnonymousIdentity> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    const address = await this.signer.getAddress();
+    // Generate keypair using SubtleCrypto
+    const keyPair = await window.crypto.subtle.generateKey(
+      { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+      true,
+      ['encrypt', 'decrypt']
+    );
+    // Export keys
+    const publicKeyBuffer = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const privateKeyBuffer = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+    const publicKeyB64 = arrayBufferToBase64(publicKeyBuffer);
+    const privateKeyB64 = arrayBufferToBase64(privateKeyBuffer);
     const pseudonym = this.generatePseudonym();
-    
-    // Generate encryption key pair (simplified for demo)
-    const keyPair = this.generateSimpleKeyPair();
-    
     const identity: AnonymousIdentity = {
-      address,
-      publicKey: keyPair.publicKey,
-      privateKey: keyPair.privateKey,
+      address: publicKeyB64,
+      publicKey: publicKeyB64,
+      privateKey: privateKeyB64,
       pseudonym,
       reputation: 0,
       createdAt: new Date()
     };
-
     this.currentIdentity = identity;
     return identity;
   }
 
-  // Generate random pseudonym
+  // No wallet connection needed
+  async connectWallet(): Promise<boolean> {
+    // Always return true (no wallet required)
+    return true;
+  }
+
   private generatePseudonym(): string {
     const adjectives = ['Mysterious', 'Shadow', 'Phantom', 'Ghost', 'Veiled', 'Hidden', 'Secret', 'Unknown'];
     const nouns = ['Traveler', 'Wanderer', 'Observer', 'Seeker', 'Explorer', 'Voyager', 'Pilgrim', 'Nomad'];
     const numbers = Math.floor(Math.random() * 9999);
-    
     const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
     const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    
     return `${adjective}${noun}#${numbers.toString().padStart(4, '0')}`;
-  }
-
-  // Generate simple key pair (placeholder for demo)
-  private generateSimpleKeyPair(): { publicKey: string; privateKey: string } {
-    return {
-      publicKey: `pub_${Math.random().toString(36).substring(2, 15)}`,
-      privateKey: `priv_${Math.random().toString(36).substring(2, 15)}`
-    };
   }
 
   // Encrypt message content (simplified for demo)
   async encryptMessage(content: string, receiverPublicKey: string): Promise<string> {
-    if (!this.currentIdentity) {
-      throw new Error('No anonymous identity');
-    }
-
-    // Simple encryption for demo (in real implementation, use proper encryption)
-    const encryptedContent = btoa(content + '|' + receiverPublicKey);
-    return encryptedContent;
+    // For demo, just base64 encode (replace with real encryption for production)
+    return window.btoa(content + '|' + receiverPublicKey);
   }
 
-  // Store message on IPFS
+  // Store message on IPFS (unchanged)
   async storeMessageOnIPFS(message: Omit<AnonymousMessage, 'id' | 'ipfsHash'>): Promise<string> {
     const messageData = JSON.stringify(message);
     const result = await ipfs.add(messageData);
@@ -129,20 +110,15 @@ export class AnonymousChatClient {
     options: {
       ephemeral?: boolean;
       burnAfterRead?: boolean;
-      expiresIn?: number; // seconds
+      expiresIn?: number;
     } = {}
   ): Promise<AnonymousMessage> {
     if (!this.currentIdentity) {
       throw new Error('No anonymous identity');
     }
-
-    // Get receiver's public key (in real implementation, this would be fetched from a registry)
-    const receiverPublicKey = await this.getReceiverPublicKey(receiverAddress);
-    
-    // Encrypt message
+    // Use receiverAddress as public key
+    const receiverPublicKey = receiverAddress;
     const encryptedContent = await this.encryptMessage(content, receiverPublicKey);
-    
-    // Create message object
     const message: Omit<AnonymousMessage, 'id' | 'ipfsHash'> = {
       content,
       senderAddress: this.currentIdentity.address,
@@ -153,58 +129,30 @@ export class AnonymousChatClient {
       burnAfterRead: options.burnAfterRead || false,
       expiresAt: options.expiresIn ? Date.now() + (options.expiresIn * 1000) : undefined
     };
-
-    // Store on IPFS
     const ipfsHash = await this.storeMessageOnIPFS(message);
-
-    // Create final message with ID and IPFS hash
     const finalMessage: AnonymousMessage = {
       ...message,
-      id: ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(message) + Date.now())),
+      id: btoa(JSON.stringify(message) + Date.now()),
       ipfsHash
     };
-
-    // Store message reference on blockchain (optional, for discovery)
-    await this.storeMessageReference(finalMessage);
-
+    // No blockchain reference needed
     return finalMessage;
   }
 
-  // Get receiver's public key (placeholder - would be fetched from decentralized registry)
-  private async getReceiverPublicKey(receiverAddress: string): Promise<string> {
-    // In a real implementation, this would query a decentralized registry
-    // For now, return a placeholder
-    return 'placeholder_public_key';
-  }
-
-  // Store message reference on blockchain for discovery
-  private async storeMessageReference(message: AnonymousMessage): Promise<void> {
-    // This would store a minimal reference on-chain for message discovery
-    // The actual message content stays on IPFS
-    console.log('Storing message reference on blockchain:', message.id);
-  }
-
-  // Get current anonymous identity
   getCurrentIdentity(): AnonymousIdentity | null {
     return this.currentIdentity;
   }
 
-  // Update pseudonym
   async updatePseudonym(newPseudonym: string): Promise<void> {
     if (!this.currentIdentity) {
       throw new Error('No anonymous identity');
     }
-    
     this.currentIdentity.pseudonym = newPseudonym;
-    // In real implementation, update on blockchain
   }
 
-  // Get reputation score
   async getReputation(address: string): Promise<number> {
-    // In real implementation, this would query the blockchain
     return Math.floor(Math.random() * 100); // Placeholder
   }
 }
 
-// Export singleton instance
 export const anonymousChatClient = new AnonymousChatClient(); 

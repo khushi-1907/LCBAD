@@ -65,6 +65,30 @@ export type Database = {
         }
         Relationships: []
       }
+      anonymous_online_users: {
+        Row: {
+          id: string;
+          public_key: string;
+          pseudonym: string;
+          last_seen: string;
+          is_online: boolean;
+        };
+        Insert: {
+          id?: string;
+          public_key: string;
+          pseudonym: string;
+          last_seen?: string;
+          is_online?: boolean;
+        };
+        Update: {
+          id?: string;
+          public_key?: string;
+          pseudonym?: string;
+          last_seen?: string;
+          is_online?: boolean;
+        };
+        Relationships: [];
+      };
     }
     Views: {
       [_ in never]: never

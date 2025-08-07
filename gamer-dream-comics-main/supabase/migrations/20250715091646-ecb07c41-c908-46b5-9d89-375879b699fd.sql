@@ -18,6 +18,16 @@ CREATE TABLE public.user_story_reads (
   UNIQUE(user_id, story_id)
 );
 
+-- Anonymous online users for chat presence
+CREATE TABLE IF NOT EXISTS public.anonymous_online_users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  public_key text NOT NULL,
+  pseudonym text NOT NULL,
+  last_seen timestamp with time zone NOT NULL DEFAULT now(),
+  is_online boolean NOT NULL DEFAULT true
+);
+CREATE INDEX IF NOT EXISTS idx_anonymous_online_users_online ON public.anonymous_online_users (is_online, last_seen);
+
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_story_reads ENABLE ROW LEVEL SECURITY;
