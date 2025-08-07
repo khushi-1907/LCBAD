@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { stories } from "../data/stories";
-import StoryCard from "../components/StoryCard";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { stories } from "@/data/stories";
+import StoryCard from "@/components/StoryCard";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Book, ChevronDown, ChevronUp, Zap, Sparkles } from "lucide-react";
 
 // Helper function to group stories by series

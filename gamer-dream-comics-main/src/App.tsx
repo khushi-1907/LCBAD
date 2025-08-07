@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssistantBot from "./components/AssistantBot";
+import AnonymousChat from "./components/AnonymousChat";
 import Index from "./pages/Index";
 import Characters from "./pages/Characters";
 import NotFound from "./pages/NotFound";
@@ -70,6 +71,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
         <AssistantBot />
+        <AnonymousChat />
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -234,54 +234,63 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     ]
   };
 
-  // Enhanced query processing with more sophisticated pattern matching
+  // Add contextReminder and clarify helpers before processQuery
+  function contextReminder() {
+    if (contextHistory.length === 0) return '';
+    const last = contextHistory[contextHistory.length - 1];
+    if (last.type === 'character') return `🔎 You're exploring character: **${last.entity.name}**\n\n`;
+    if (last.type === 'story') return `📖 You're reading about story: **${last.entity.title}**\n\n`;
+    if (last.type === 'arc') return `🌀 You're in the arc: **${last.entity.name}**\n\n`;
+    if (last.type === 'theme') return `🎭 You're exploring the theme: **${last.entity}**\n\n`;
+    if (last.type === 'author') return `👤 You're learning about the author.\n\n`;
+    if (last.type === 'universe') return `🌌 You're exploring the universe: **${knowledgeBase.universe.name}**\n\n`;
+    return '';
+  }
+
+  function clarify(question: string) {
+    return `🤔 I couldn't find a clear answer for "${question}". Could you be more specific, or try rephrasing?`;
+  }
+
+  // Replace the entire processQuery function with the upgraded version
   const processQuery = (query: string): string => {
     const lowerQuery = query.toLowerCase();
-    
     let processedQuery = lowerQuery;
     const keywords = processedQuery.split(/\W+/).filter(w => w.length > 2);
+
     // Special case: Who are you
     if (/who are you|what are you|your name|who is assistant/i.test(processedQuery)) {
-      throw new Error("Someone very important for this Comic World, maybe a Fourth Wall breaker perhaps!");
+      return contextReminder() + comicResponse("Someone very important for this Comic World, maybe a Fourth Wall breaker perhaps!\n\nWant to know what I can do? Just ask for 'help'!");
     }
 
     // Enhanced pronoun resolution in any part of the query
     if (contextHistory.length > 0) {
       const lastEntity = contextHistory[contextHistory.length - 1];
       if (lastEntity.type === 'character') {
-        processedQuery = processedQuery
-          .replace(/\b(he|him|his|she|her|they|them|their)\b/g, lastEntity.entity.name.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(he|him|his|she|her|they|them|their)\b/g, lastEntity.entity.name.toLowerCase());
       }
       if (lastEntity.type === 'story') {
-        processedQuery = processedQuery
-          .replace(/\b(the story|story|title|name|he|him|his)\b/g, lastEntity.entity.title.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the story|story|title|name|he|him|his)\b/g, lastEntity.entity.title.toLowerCase());
       }
       if (lastEntity.type === 'arc') {
-        processedQuery = processedQuery
-          .replace(/\b(the arc|arc|series|saga|he|him|his)\b/g, lastEntity.entity.name.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the arc|arc|series|saga|he|him|his)\b/g, lastEntity.entity.name.toLowerCase());
       }
       if (lastEntity.type === 'theme') {
-        processedQuery = processedQuery
-          .replace(/\b(the theme|theme|significance|meaning|why important|what does.*represent)\b/g, lastEntity.entity.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the theme|theme|significance|meaning|why important|what does.*represent)\b/g, lastEntity.entity.toLowerCase());
       }
     }
     if (contextHistory.length > 1) {
       const prevEntity = contextHistory[contextHistory.length - 2];
       if (prevEntity.type === 'character') {
-        processedQuery = processedQuery
-          .replace(/\b(he|him|his|she|her|they|them|their)\b/g, prevEntity.entity.name.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(he|him|his|she|her|they|them|their)\b/g, prevEntity.entity.name.toLowerCase());
       }
       if (prevEntity.type === 'story') {
-        processedQuery = processedQuery
-          .replace(/\b(the story|story|title|name|he|him|his)\b/g, prevEntity.entity.title.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the story|story|title|name|he|him|his)\b/g, prevEntity.entity.title.toLowerCase());
       }
       if (prevEntity.type === 'arc') {
-        processedQuery = processedQuery
-          .replace(/\b(the arc|arc|series|saga|he|him|his)\b/g, prevEntity.entity.name.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the arc|arc|series|saga|he|him|his)\b/g, prevEntity.entity.name.toLowerCase());
       }
       if (prevEntity.type === 'theme') {
-        processedQuery = processedQuery
-          .replace(/\b(the theme|theme|significance|meaning|why important|what does.*represent)\b/g, prevEntity.entity.toLowerCase());
+        processedQuery = processedQuery.replace(/\b(the theme|theme|significance|meaning|why important|what does.*represent)\b/g, prevEntity.entity.toLowerCase());
       }
     }
 
@@ -304,13 +313,13 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
       const entity = pronounMap[processedQuery.trim()];
       if (entity) {
         if (entity === knowledgeBase.author) {
-          return comicResponse(`**${knowledgeBase.author.name}**\n\n**Education:** ${knowledgeBase.author.education}\n\n**Bio:** ${knowledgeBase.author.bio}\n\n**Writing Style:** ${knowledgeBase.author.writingStyle}`);
+          return contextReminder() + comicResponse(`**${knowledgeBase.author.name}**\n\n**Education:** ${knowledgeBase.author.education}\n\n**Bio:** ${knowledgeBase.author.bio}\n\n**Writing Style:** ${knowledgeBase.author.writingStyle}` + followUps(knowledgeBase.author));
         }
         if (entity.name) {
-          return comicResponse(`**${entity.name}**\n\n**Role:** ${entity.role}\n\n**Description:** ${entity.description}\n\n**Abilities:** ${entity.abilities?.join(', ')}`);
+          return contextReminder() + comicResponse(`**${entity.name}**\n\n**Role:** ${entity.role}\n\n**Description:** ${entity.description}\n\n**Abilities:** ${entity.abilities?.join(', ')}` + followUps(entity));
         }
       }
-      return comicResponse("I'm not sure who you're referring to. Please clarify your question.");
+      return contextReminder() + comicResponse("I'm not sure who you're referring to. Please clarify your question.");
     }
 
     // Use extractEntity to update context for any entity mentioned
@@ -321,12 +330,11 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
 
     // If ambiguous, ask for clarification
     if (!entityResult && /he|she|they|it|this|that|him|her|them/.test(processedQuery) && contextHistory.length === 0) {
-      return comicResponse("Can you clarify who or what you're referring to? (e.g., character name, story, or power)");
+      return contextReminder() + comicResponse(clarify(query));
     }
 
     // Add 'what happened next' and relationship logic
-    if (/what happened next|then what|after that|continue/i.test(query) && contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'story') {
-      // Try to find the next story in the arc
+    if (/what happened next|then what|after that|continue/i.test(processedQuery) && contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'story') {
       const arc = knowledgeBase.storyArcs.find(a => a.stories.includes(contextHistory[contextHistory.length - 1].entity.id));
       if (arc) {
         const idx = arc.stories.indexOf(contextHistory[contextHistory.length - 1].entity.id);
@@ -334,114 +342,113 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
           const nextStory = stories.find(s => s.id === arc.stories[idx + 1]);
           if (nextStory) {
             updateContextHistory(nextStory, 'story');
-            return comicResponse(`**Next in the ${arc.name}:**\n\n**${nextStory.title}**\n${nextStory.summary}`);
+            return contextReminder() + comicResponse(`**Next in the ${arc.name}:**\n\n**${nextStory.title}**\n${nextStory.summary}` + followUps(nextStory));
           }
         }
-        return comicResponse(`That was the last story in the ${arc.name}.`);
+        return contextReminder() + comicResponse(`That was the last story in the ${arc.name}.`);
       }
-      return comicResponse("I'm not sure what comes next. Can you specify the arc or story?");
+      return contextReminder() + comicResponse("I'm not sure what comes next. Can you specify the arc or story?");
     }
 
     // Add relationship and significance logic
     if (/relationship|connection|how.*related|who.*fought|who.*helped|who.*saved/i.test(processedQuery)) {
       if (contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'character' && contextHistory[contextHistory.length - 1].entity.relatedStory) {
         const relatedStory = stories.find(s => s.id === contextHistory[contextHistory.length - 1].entity.relatedStory);
-        return comicResponse(`**${contextHistory[contextHistory.length - 1].entity.name}**'s role in **${relatedStory?.title || 'this story'}**: ${contextHistory[contextHistory.length - 1].entity.description}`);
+        return contextReminder() + comicResponse(`**${contextHistory[contextHistory.length - 1].entity.name}**'s role in **${relatedStory?.title || 'this story'}**: ${contextHistory[contextHistory.length - 1].entity.description}` + followUps(contextHistory[contextHistory.length - 1].entity));
       }
       if (contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'arc' && contextHistory[contextHistory.length - 1].entity.mainCharacter) {
-        return comicResponse(`**${contextHistory[contextHistory.length - 1].entity.mainCharacter}** is the main character of the ${contextHistory[contextHistory.length - 1].entity.name} arc.`);
+        return contextReminder() + comicResponse(`**${contextHistory[contextHistory.length - 1].entity.mainCharacter}** is the main character of the ${contextHistory[contextHistory.length - 1].entity.name} arc.` + followUps(contextHistory[contextHistory.length - 1].entity));
       }
     }
 
     // Add theme and motif awareness
     if (/theme|motif|significance|meaning|why important|what does.*represent/i.test(processedQuery)) {
       if (contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'theme') {
-        return comicResponse(`**Theme: ${contextHistory[contextHistory.length - 1].entity}**\nThis theme is explored through various characters and storylines, such as ${knowledgeBase.storyArcs.filter(a => a.theme.toLowerCase().includes(contextHistory[contextHistory.length - 1].entity.toLowerCase())).map(a => a.name).join(', ')}.`);
+        return contextReminder() + comicResponse(`**Theme: ${contextHistory[contextHistory.length - 1].entity}**\nThis theme is explored through various characters and storylines, such as ${knowledgeBase.storyArcs.filter(a => a.theme.toLowerCase().includes(contextHistory[contextHistory.length - 1].entity.toLowerCase())).map(a => a.name).join(', ')}.`);
       }
       if (contextHistory.length > 0 && contextHistory[contextHistory.length - 1].type === 'story') {
-        return comicResponse(`**Themes in ${contextHistory[contextHistory.length - 1].entity.title}:**\n${knowledgeBase.author.themes.filter(t => contextHistory[contextHistory.length - 1].entity.summary.toLowerCase().includes(t.toLowerCase())).join(', ')}`);
+        return contextReminder() + comicResponse(`**Themes in ${contextHistory[contextHistory.length - 1].entity.title}:**\n${knowledgeBase.author.themes.filter(t => contextHistory[contextHistory.length - 1].entity.summary.toLowerCase().includes(t.toLowerCase())).join(', ')}`);
       }
     }
 
     // Author-related queries
     if (processedQuery.includes('author') || processedQuery.includes('jashan') || processedQuery.includes('writer') || processedQuery.includes('creator')) {
-      updateContextHistory(undefined, 'author'); // Clear last character/story context
+      updateContextHistory(undefined, 'author');
       if (processedQuery.includes('style') || processedQuery.includes('writing')) {
-        return comicResponse(`**Jashan Bansal's Writing Style:**\n${knowledgeBase.author.writingStyle}\n\n**Themes:** ${knowledgeBase.author.themes.join(', ')}`);
+        return contextReminder() + comicResponse(`**Jashan Bansal's Writing Style:**\n${knowledgeBase.author.writingStyle}\n\n**Themes:** ${knowledgeBase.author.themes.join(', ')}` + followUps(knowledgeBase.author));
       }
       if (processedQuery.includes('bio') || processedQuery.includes('about')) {
-        return comicResponse(`**About the Author:**\n${knowledgeBase.author.bio}\n\n**Education:** ${knowledgeBase.author.education}`);
+        return contextReminder() + comicResponse(`**About the Author:**\n${knowledgeBase.author.bio}\n\n**Education:** ${knowledgeBase.author.education}` + followUps(knowledgeBase.author));
       }
       if (processedQuery.includes('education') || processedQuery.includes('study') || processedQuery.includes('degree')) {
-        return comicResponse(`**Education:** ${knowledgeBase.author.education}`);
+        return contextReminder() + comicResponse(`**Education:** ${knowledgeBase.author.education}` + followUps(knowledgeBase.author));
       }
       if (processedQuery.includes('contact')) {
-        return comicResponse(`**Contact Jashan Bansal:**\n- LinkedIn: ${knowledgeBase.author.contact.linkedin}\n- WhatsApp: ${knowledgeBase.author.contact.whatsapp}\n- Email: ${knowledgeBase.author.contact.email}`);
+        return contextReminder() + comicResponse(`**Contact Jashan Bansal:**\n- LinkedIn: ${knowledgeBase.author.contact.linkedin}\n- WhatsApp: ${knowledgeBase.author.contact.whatsapp}\n- Email: ${knowledgeBase.author.contact.email}` + followUps(knowledgeBase.author));
       }
-      return comicResponse(`**Author:** ${knowledgeBase.author.name}\n\n**Education:** ${knowledgeBase.author.education}\n\n${knowledgeBase.author.bio}\n\n**Writing Style:** ${knowledgeBase.author.writingStyle}`);
+      return contextReminder() + comicResponse(`**Author:** ${knowledgeBase.author.name}\n\n**Education:** ${knowledgeBase.author.education}\n\n${knowledgeBase.author.bio}\n\n**Writing Style:** ${knowledgeBase.author.writingStyle}` + followUps(knowledgeBase.author));
     }
 
     // Universe and world-building queries
     if (processedQuery.includes('universe') || processedQuery.includes('world') || processedQuery.includes('setting') || processedQuery.includes('lore')) {
-      updateContextHistory(undefined, 'universe'); // Clear last character/story context
+      updateContextHistory(undefined, 'universe');
       if (processedQuery.includes('concept') || processedQuery.includes('core')) {
-        return comicResponse(`**Core Concepts of Life Could Be A Dream:**\n${knowledgeBase.universe.coreConcepts.map(c => `• ${c}`).join('\n')}`);
+        return contextReminder() + comicResponse(`**Core Concepts of Life Could Be A Dream:**\n${knowledgeBase.universe.coreConcepts.map(c => `• ${c}`).join('\n')}`);
       }
-      return comicResponse(`**Universe:** ${knowledgeBase.universe.name}\n\n${knowledgeBase.universe.description}\n\n**Core Concepts:**\n${knowledgeBase.universe.coreConcepts.map(c => `• ${c}`).join('\n')}`);
+      return contextReminder() + comicResponse(`**Universe:** ${knowledgeBase.universe.name}\n\n${knowledgeBase.universe.description}\n\n**Core Concepts:**\n${knowledgeBase.universe.coreConcepts.map(c => `• ${c}`).join('\n')}`);
     }
 
     // Story arc queries
     if (processedQuery.includes('arc') || processedQuery.includes('series') || processedQuery.includes('saga')) {
-      updateContextHistory(undefined, 'arc'); // Clear last character/story context
-      return comicResponse(`**Story Arcs in Life Could Be A Dream:**\n${knowledgeBase.storyArcs.map(arc => `**${arc.name}**\n• Stories: ${arc.stories.join(', ')}\n• Theme: ${arc.theme}\n• Main Character: ${arc.mainCharacter}`).join('\n\n')}`);
+      updateContextHistory(undefined, 'arc');
+      return contextReminder() + comicResponse(`**Story Arcs in Life Could Be A Dream:**\n${knowledgeBase.storyArcs.map(arc => `**${arc.name}**\n• Stories: ${arc.stories.join(', ')}\n• Theme: ${arc.theme}\n• Main Character: ${arc.mainCharacter}`).join('\n\n')}`);
     }
 
     // Enhanced story-related queries
     if (processedQuery.includes('story') || processedQuery.includes('stories')) {
-      updateContextHistory(undefined, 'story'); // Clear last character/arc context
+      updateContextHistory(undefined, 'story');
       if (processedQuery.includes('videogamer')) {
         const videogamerStories = stories.filter(s => s.id.startsWith('videogamer'));
-        return comicResponse(`**Videogamer Stories (${videogamerStories.length}):**\n${videogamerStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Videogamer Stories (${videogamerStories.length}):**\n${videogamerStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
       }
       if (processedQuery.includes('atom')) {
         const atomStories = stories.filter(s => s.id.startsWith('atom'));
-        return comicResponse(`**Atom Stories (${atomStories.length}):**\n${atomStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Atom Stories (${atomStories.length}):**\n${atomStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
       }
       if (processedQuery.includes('dictator')) {
         const dictatorStories = stories.filter(s => s.id.startsWith('dictator'));
-        return comicResponse(`**Dictator Stories (${dictatorStories.length}):**\n${dictatorStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Dictator Stories (${dictatorStories.length}):**\n${dictatorStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
       }
       if (processedQuery.includes('mr. effort') || processedQuery.includes('mreffort')) {
         const effortStories = stories.filter(s => s.id.startsWith('mreffort'));
-        return comicResponse(`**Mr. Effort Stories (${effortStories.length}):**\n${effortStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Mr. Effort Stories (${effortStories.length}):**\n${effortStories.map(s => `• **${s.title}**\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
       }
       if (processedQuery.includes('all') || processedQuery.includes('list')) {
-        return comicResponse(`**All Stories (${stories.length}):**\n${stories.map(s => `• **${s.title}** (${s.id})\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**All Stories (${stories.length}):**\n${stories.map(s => `• **${s.title}** (${s.id})\n  Summary: ${s.summary}\n  Published: ${s.published}`).join('\n\n')}`);
       }
-      return comicResponse(`**Story Categories:**\n• Videogamer Stories: ${stories.filter(s => s.id.startsWith('videogamer')).length}\n• Atom Stories: ${stories.filter(s => s.id.startsWith('atom')).length}\n• Dictator Stories: ${stories.filter(s => s.id.startsWith('dictator')).length}\n• Mr. Effort Stories: ${stories.filter(s => s.id.startsWith('mreffort')).length}\n\nAsk about specific categories for detailed information!`);
+      return contextReminder() + comicResponse(`**Story Categories:**\n• Videogamer Stories: ${stories.filter(s => s.id.startsWith('videogamer')).length}\n• Atom Stories: ${stories.filter(s => s.id.startsWith('atom')).length}\n• Dictator Stories: ${stories.filter(s => s.id.startsWith('dictator')).length}\n• Mr. Effort Stories: ${stories.filter(s => s.id.startsWith('mreffort')).length}\n\nAsk about specific categories for detailed information!`);
     }
 
     // Enhanced character-related queries
     if (processedQuery.includes('character') || processedQuery.includes('characters')) {
-      updateContextHistory(undefined, 'character'); // Clear last story/arc context
+      updateContextHistory(undefined, 'character');
       if (processedQuery.includes('protagonist') || processedQuery.includes('hero')) {
         const protagonists = characters.filter(c => c.role === 'Protagonist');
-        return comicResponse(`**Main Protagonists:**\n${protagonists.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Main Protagonists:**\n${protagonists.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
       }
       if (processedQuery.includes('antagonist') || processedQuery.includes('villain')) {
         const antagonists = characters.filter(c => c.role === 'Antagonist');
-        return comicResponse(`**Main Antagonists:**\n${antagonists.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Main Antagonists:**\n${antagonists.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
       }
       if (processedQuery.includes('supporting')) {
         const supporting = characters.filter(c => c.role === 'Supporting Character');
-        return comicResponse(`**Supporting Characters:**\n${supporting.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
+        return contextReminder() + comicResponse(`**Supporting Characters:**\n${supporting.map(c => `• **${c.name}**\n  Description: ${c.description}\n  Abilities: ${c.abilities.join(', ')}`).join('\n\n')}`);
       }
-      return comicResponse(`**Character Categories:**\n• Protagonists: ${characters.filter(c => c.role === 'Protagonist').length}\n• Antagonists: ${characters.filter(c => c.role === 'Antagonist').length}\n• Supporting Characters: ${characters.filter(c => c.role === 'Supporting Character').length}\n\nAsk about specific categories or character names for detailed information!`);
+      return contextReminder() + comicResponse(`**Character Categories:**\n• Protagonists: ${characters.filter(c => c.role === 'Protagonist').length}\n• Antagonists: ${characters.filter(c => c.role === 'Antagonist').length}\n• Supporting Characters: ${characters.filter(c => c.role === 'Supporting Character').length}\n\nAsk about specific categories or character names for detailed information!`);
     }
 
     // --- Smarter Character Extraction (Fuzzy, Contextual, Role-based) ---
     function fuzzyMatch(str1, str2) {
-      // Simple fuzzy: ignore case, spaces, and allow partials
       return str1.replace(/\s+/g, '').toLowerCase().includes(str2.replace(/\s+/g, '').toLowerCase()) ||
              str2.replace(/\s+/g, '').toLowerCase().includes(str1.replace(/\s+/g, '').toLowerCase());
     }
@@ -453,7 +460,6 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
     );
     // If not found, try by role and story context
     if (!character) {
-      // e.g., 'antagonist of dictator 1'
       const roleMatch = /(protagonist|antagonist|villain|hero|supporting)[^\w]*(of|in)?[^\w]*([\w\s-]+)/i.exec(processedQuery);
       if (roleMatch) {
         const role = roleMatch[1].toLowerCase();
@@ -478,16 +484,15 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
       const relatedStory = stories.find(s => s.id === character.relatedStory);
       let details = `**${character.name}**\n\n**Role:** ${character.role}\n\n**Description:** ${character.description}\n\n**Abilities:** ${character.abilities.join(', ')}`;
       if (relatedStory) details += `\n\n**Appears in:** ${relatedStory.title}`;
-      // Add relationships
       const allies = characters.filter(c => c.id !== character.id && c.relatedStory === character.relatedStory && c.role !== character.role);
       if (allies.length) details += `\n\n**Other key characters in this story:** ${allies.map(a => a.name).join(', ')}`;
-      return comicResponse(details);
+      return contextReminder() + comicResponse(details + followUps(character));
     }
     // If multiple possible matches, ask for clarification
     const possibleChars = characters.filter(c => keywords.some(k => fuzzyMatch(c.name, k)));
     if (possibleChars.length > 1) {
       const disambiguation = disambiguate(processedQuery, 'character');
-      return comicResponse(disambiguation || `I found multiple characters matching your question: ${possibleChars.map(c => c.name).join(', ')}. Who do you mean?`);
+      return contextReminder() + comicResponse(disambiguation || `I found multiple characters matching your question: ${possibleChars.map(c => c.name).join(', ')}. Who do you mean?`);
     }
     // --- End Smarter Character Extraction ---
 
@@ -496,7 +501,6 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
 
     // Enhanced story content queries: search full content for relevant matches
     if (processedQuery.includes('content') || processedQuery.includes('plot') || processedQuery.includes('what happens')) {
-      // Find the most relevant story by searching full content
       let bestMatch = null;
       let bestScore = 0;
       for (const s of stories) {
@@ -510,7 +514,6 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
         }
       }
       if (bestMatch) {
-        // Find a relevant quote from the content
         let quote = '';
         const words = processedQuery.split(' ');
         for (const word of words) {
@@ -521,35 +524,31 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
           }
         }
         if (!quote) quote = bestMatch.content.substring(0, 300) + '...';
-        return comicResponse(`**${bestMatch.title}**\n\n**Summary:** ${bestMatch.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${bestMatch.published}\n\n**Author:** ${bestMatch.author}`);
+        return contextReminder() + comicResponse(`**${bestMatch.title}**\n\n**Summary:** ${bestMatch.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${bestMatch.published}\n\n**Author:** ${bestMatch.author}` + followUps(bestMatch));
       }
     }
 
     // Character relationship queries
     if (processedQuery.includes('relationship') || processedQuery.includes('connection') || processedQuery.includes('related')) {
       if (processedQuery.includes('atom') && processedQuery.includes('pandey')) {
-        return comicResponse(`**Atom and Pandey's Relationship:**\n\nAtom and Pandey were former classmates and competitive rivals. They were both teleported to the White Room where Atom sacrificed himself to help Pandey escape. This traumatic experience led to Pandey being placed in mental health care, while Atom gained supernatural powers after death.`);
+        return contextReminder() + comicResponse(`**Atom and Pandey's Relationship:**\n\nAtom and Pandey were former classmates and competitive rivals. They were both teleported to the White Room where Atom sacrificed himself to help Pandey escape. This traumatic experience led to Pandey being placed in mental health care, while Atom gained supernatural powers after death.`);
       }
       if (processedQuery.includes('kid') && processedQuery.includes('variant')) {
-        return comicResponse(`**The Kid and The Evil Videogamer's Relationship:**\n\nThe Evil Videogamer is an alternate timeline version of The Kid who has mastered his gaming powers. He rules over a dimensional city and seeks to steal the original Kid's powers. They engage in epic gaming battles across different video game dimensions.`);
+        return contextReminder() + comicResponse(`**The Kid and The Evil Videogamer's Relationship:**\n\nThe Evil Videogamer is an alternate timeline version of The Kid who has mastered his gaming powers. He rules over a dimensional city and seeks to steal the original Kid's powers. They engage in epic gaming battles across different video game dimensions.`);
       }
     }
 
     // Theme and concept queries
     if (processedQuery.includes('theme') || processedQuery.includes('concept') || processedQuery.includes('meaning')) {
-      return comicResponse(`**Themes in Life Could Be A Dream:**\n\n${knowledgeBase.author.themes.map(theme => `• **${theme}**: Explored through various characters and storylines`).join('\n')}\n\nEach story explores these themes through different perspectives and power systems.`);
+      return contextReminder() + comicResponse(`**Themes in Life Could Be A Dream:**\n\n${knowledgeBase.author.themes.map(theme => `• **${theme}**: Explored through various characters and storylines`).join('\n')}\n\nEach story explores these themes through different perspectives and power systems.`);
     }
 
     // General help
     if (processedQuery.includes('help') || processedQuery.includes('what can you do')) {
-      return comicResponse(`**I can help you with:**\n\n• **Author Information**: About Jashan Bansal, writing style, themes\n• **Universe Lore**: World-building, core concepts, setting\n• **Stories**: All story details, summaries, content previews\n• **Characters**: Character profiles, abilities, relationships\n• **Timeline**: Chronological events and their significance\n• **Powers**: Power types, users, limitations\n• **Story Arcs**: Different story series and their themes\n• **Character Relationships**: How characters are connected\n• **Themes**: Deeper meanings and concepts\n\nJust ask me anything about the Life Could Be A Dream universe!`);
+      return contextReminder() + comicResponse(`Here's what I can help you with:\n\n• **Author Information**: About Jashan Bansal, writing style, themes\n• **Universe Lore**: World-building, core concepts, setting\n• **Stories**: All story details, summaries, content previews\n• **Characters**: Character profiles, abilities, relationships\n• **Timeline**: Chronological events and their significance\n• **Powers**: Power types, users, limitations\n• **Story Arcs**: Different story series and their themes\n• **Character Relationships**: How characters are connected\n• **Themes**: Deeper meanings and concepts\n\nJust ask me anything about the Life Could Be A Dream universe!`);
     }
 
     // --- AI-Like Semantic Search and Synthesis ---
-    // Extract keywords/phrases from the query
-    // const keywords = processedQuery.split(/\W+/).filter(w => w.length > 2); // Moved to top
-
-    // Search all stories for semantic matches (title, summary, content)
     const storyMatches = stories.filter(s =>
       keywords.some(k =>
         s.title.toLowerCase().includes(k) ||
@@ -557,8 +556,6 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
         (s.content && s.content.toLowerCase().includes(k))
       )
     );
-
-    // Search all characters for semantic matches (name, description, abilities, etc.)
     const characterMatches = characters.filter(c =>
       keywords.some(k =>
         c.name.toLowerCase().includes(k) ||
@@ -566,20 +563,16 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
         (c.abilities && c.abilities.some(a => a.toLowerCase().includes(k)))
       )
     );
-
-    // If multiple matches, synthesize and summarize
     if (storyMatches.length > 1) {
       const summary = storyMatches.map(s => `• **${s.title}**: ${s.summary}`).join('\n');
-      return comicResponse(`I found several stories related to your question:\n${summary}`);
+      return contextReminder() + comicResponse(`I found several stories related to your question:\n${summary}`);
     }
     if (characterMatches.length > 1) {
       const summary = characterMatches.map(c => `• **${c.name}**: ${c.description}`).join('\n');
-      return comicResponse(`I found several characters related to your question:\n${summary}`);
+      return contextReminder() + comicResponse(`I found several characters related to your question:\n${summary}`);
     }
-    // If one strong match, give a detailed, AI-like answer
     if (storyMatches.length === 1) {
       const s = storyMatches[0];
-      // Find a relevant quote
       let quote = '';
       for (const k of keywords) {
         if (s.content && s.content.toLowerCase().includes(k)) {
@@ -589,12 +582,11 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
         }
       }
       if (!quote && s.content) quote = s.content.substring(0, 300) + '...';
-      return comicResponse(`**${s.title}**\n\n**Summary:** ${s.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${s.published}\n\n**Author:** ${s.author}`);
+      return contextReminder() + comicResponse(`**${s.title}**\n\n**Summary:** ${s.summary}\n\n**Relevant Content:** ${quote}\n\n**Published:** ${s.published}\n\n**Author:** ${s.author}` + followUps(s));
     }
     if (characterMatches.length === 1) {
       const c = characterMatches[0];
       let details = `**${c.name}**\n\n**Role:** ${c.role}\n\n**Description:** ${c.description}\n\n**Abilities:** ${c.abilities.join(', ')}`;
-      // Add any matching ability or field
       for (const [key, value] of Object.entries(c)) {
         if (typeof value === 'string' && keywords.some(k => value.toLowerCase().includes(k)) && key !== 'name') {
           details += `\n\n**${key.charAt(0).toUpperCase() + key.slice(1)}:** ${value}`;
@@ -603,12 +595,24 @@ const AssistantBot: React.FC<AssistantBotProps> = ({ className }) => {
           details += `\n\n**${key.charAt(0).toUpperCase() + key.slice(1)}:** ${value.join(', ')}`;
         }
       }
-      return comicResponse(details);
+      return contextReminder() + comicResponse(details + followUps(c));
     }
     // --- End AI-Like Section ---
 
     // Default response with suggestions
-    return comicResponse("I'm not sure about that specific question, but I can help you with:\n\n• Author information (Jashan Bansal)\n• Story details and summaries\n• Character profiles and relationships\n• Timeline and universe lore\n• Power systems and abilities\n• Themes and concepts\n\nTry asking about any of these topics, or ask for help to see what I can assist you with!");
+    return (
+      contextReminder() +
+      comicResponse(
+        "I'm not sure about that specific question, but I can help you with:\n\n" +
+        "• Author information (Jashan Bansal)\n" +
+        "• Story details and summaries\n" +
+        "• Character profiles and relationships\n" +
+        "• Timeline and universe lore\n" +
+        "• Power systems and abilities\n" +
+        "• Themes and concepts\n\n" +
+        "Try asking about any of these topics, or ask for help to see what I can assist you with!"
+      )
+    );
   };
 
   const handleSendMessage = async () => {

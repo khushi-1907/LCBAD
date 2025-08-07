@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { stories } from "../data/stories";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { stories } from "@/data/stories";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { ArrowLeft, Book, Plus, Minus, Type, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
