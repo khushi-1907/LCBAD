@@ -3,6 +3,7 @@ import { stories } from "../data/stories";
 import StoryCard from "../components/StoryCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import LiveClock from "../components/LiveClock";
 import { Link } from "react-router-dom";
 import { Sparkles, Zap, Book } from "lucide-react";
 
@@ -28,6 +29,12 @@ const Index = () => {
           <div className="flex justify-center mb-8 floating">
             <Sparkles className="h-20 w-20 text-cyan-400 neon-glow" />
           </div>
+          
+          {/* Live Clock Display */}
+          <div className="flex justify-center mb-6">
+            <LiveClock showSeconds={true} showDate={true} variant="detailed" />
+          </div>
+          
           <h1 className="text-5xl md:text-7xl font-bold mb-6 cyberpunk-text">
             Welcome to Life Could Be A Dream
           </h1>
