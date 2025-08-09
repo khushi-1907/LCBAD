@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Book, Users, User, LogOut } from "lucide-react";
+import { Book, Users, User, LogOut, Bot } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +75,13 @@ const Navbar: React.FC = () => {
             >
               <User className="mr-1 h-4 w-4" />
               About
+            </Link>
+            <Link 
+              to="/assistant" 
+              className={`flex items-center ${isActive('/assistant')}`}
+            >
+              <Bot className="mr-1 h-4 w-4" />
+              Assistant
             </Link>
           </div>
           
