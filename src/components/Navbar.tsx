@@ -1,15 +1,16 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Book, Users, User, LogOut } from "lucide-react";
+import { Book, Users, User, LogOut, Bot } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import LiveClock from "./LiveClock";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  
+
   const isActive = (path: string) => {
     return location.pathname === path ? "text-comic-purple" : "hover:text-comic-purple transition-colors";
   };
@@ -44,6 +45,9 @@ const Navbar: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-6">
+        {/* Live Clock Display */}
+        <LiveClock showSeconds={true} variant="default" />
+        
           <div className="flex space-x-6">
             <Link 
               to="/" 
@@ -71,6 +75,13 @@ const Navbar: React.FC = () => {
             >
               <User className="mr-1 h-4 w-4" />
               About
+            </Link>
+            <Link 
+              to="/assistant" 
+              className={`flex items-center ${isActive('/assistant')}`}
+            >
+              <Bot className="mr-1 h-4 w-4" />
+              Assistant
             </Link>
           </div>
           
